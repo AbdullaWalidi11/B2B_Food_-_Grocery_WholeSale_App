@@ -32,7 +32,7 @@ export class AuthController {
     return this.authService.registerBuyer(dto);
   }
 
-  @ApiOperation({ summary: 'Register a restaurant / buyer company + admin user' })
+  @ApiOperation({ summary: 'Log in with email and password' })
   @Post('login')
   @HttpCode(HttpStatus.OK)
   async login(@Body() dto: LoginDto) {
