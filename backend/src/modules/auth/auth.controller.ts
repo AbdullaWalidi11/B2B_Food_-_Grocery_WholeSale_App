@@ -7,6 +7,7 @@ import {
   HttpCode,
   HttpStatus,
 } from '@nestjs/common';
+import { Throttle } from '@nestjs/throttler';
 import { AuthService } from './auth.service';
 import { RegisterVendorDto } from './dto/register-vendor.dto';
 import { RegisterBuyerDto } from './dto/register-buyer.dto';
@@ -32,6 +33,7 @@ export class AuthController {
     return this.authService.registerBuyer(dto);
   }
 
+  @Throttle({ default: { limit: 5, ttl: 60000 } })
   @ApiOperation({ summary: 'Log in with email and password' })
   @Post('login')
   @HttpCode(HttpStatus.OK)

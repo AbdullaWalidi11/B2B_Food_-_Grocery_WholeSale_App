@@ -1,17 +1,35 @@
+// backend/src/main.ts
 import 'dotenv/config';
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe } from '@nestjs/common';
-import { AppModule } from './app.module';
 import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
+import helmet from 'helmet';
+import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
 
+  // ==========================================
+  // 1. HTTP SECURITY HEADERS (Helmet)
+  // ==========================================
+  app.use(
+    helmet({
+      crossOriginEmbedderPolicy: false,
+      contentSecurityPolicy: false, // Keeps Swagger UI working smoothly
+    }),
+  );
+
+  // ==========================================
+  // 2. CORS FOR FRONTEND
+  // ==========================================
   app.enableCors({
     origin: ['http://localhost:3000'],
     credentials: true,
   });
 
+  // ==========================================
+  // 3. GLOBAL VALIDATION PIPES
+  // ==========================================
   app.useGlobalPipes(
     new ValidationPipe({
       whitelist: true,
@@ -19,10 +37,15 @@ async function bootstrap() {
       transform: true,
     }),
   );
-  
+
+  // ==========================================
+  // 4. SWAGGER DOCUMENTATION
+  // ==========================================
   const config = new DocumentBuilder()
     .setTitle('B2B Food & Grocery Wholesale API')
-    .setDescription('Multi-Vendor Marketplace API: Vendors, Restaurants, Cari Hesap & Dynamic Pricing')
+    .setDescription(
+      'Multi-Vendor Marketplace API: Vendors, Restaurants, Cari Hesap & Dynamic Pricing',
+    )
     .setVersion('1.0')
     .addBearerAuth(
       {
@@ -33,14 +56,16 @@ async function bootstrap() {
         description: 'Enter your JWT token',
         in: 'header',
       },
-      'JWT-auth', // Key used to reference bearer auth
+      'JWT-auth',
     )
     .build();
+
   const document = SwaggerModule.createDocument(app, config);
   SwaggerModule.setup('api', app, document);
 
   const port = process.env.PORT ?? 3001;
   await app.listen(port);
   console.log(`🚀 NestJS Backend running on: http://localhost:${port}`);
+  console.log(`📑 Swagger Documentation available at: http://localhost:${port}/api`);
 }
 bootstrap();
