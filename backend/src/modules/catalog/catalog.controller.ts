@@ -15,6 +15,7 @@ import { ApiTags, ApiOperation, ApiBearerAuth } from '@nestjs/swagger';
 import { CatalogService } from './catalog.service';
 import { CreateProductDto } from './dto/create-product.dto';
 import { UpdateProductDto } from './dto/update-product.dto';
+import { CreatePriceSheetDto } from './dto/create-price-sheet.dto';
 import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
 import { RolesGuard } from '../../common/guards/roles.guard';
 import { Roles } from '../../common/decorators/roles.decorator';
@@ -22,6 +23,7 @@ import { CurrentUser } from '../../common/decorators/current-user.decorator';
 import { UserRole } from '../../../generated/prisma/client';
 
 @ApiTags('Catalog & Products')
+@ApiBearerAuth('JWT-auth')
 @Controller('catalog')
 export class CatalogController {
   constructor(private readonly catalogService: CatalogService) {}
@@ -30,7 +32,6 @@ export class CatalogController {
   // VENDOR PRODUCT ENDPOINTS (Protected)
   // ==========================================
 
-  @ApiBearerAuth('JWT-auth')
   @ApiOperation({ summary: 'Add a new product to your wholesale catalog (Vendor Admin only)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.VENDOR_ADMIN, UserRole.VENDOR_STAFF)
@@ -42,7 +43,8 @@ export class CatalogController {
     return this.catalogService.createProduct(vendorId, dto);
   }
 
-  @ApiBearerAuth('JWT-auth')
+
+
   @ApiOperation({ summary: 'Get all products in your own catalog (Vendor only)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.VENDOR_ADMIN, UserRole.VENDOR_STAFF)
@@ -51,7 +53,8 @@ export class CatalogController {
     return this.catalogService.getVendorProducts(vendorId);
   }
 
-  @ApiBearerAuth('JWT-auth')
+
+
   @ApiOperation({ summary: 'Get a single product by ID (Vendor only)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.VENDOR_ADMIN, UserRole.VENDOR_STAFF)
@@ -63,7 +66,8 @@ export class CatalogController {
     return this.catalogService.getVendorProductById(vendorId, productId);
   }
 
-  @ApiBearerAuth('JWT-auth')
+
+
   @ApiOperation({ summary: 'Update a product (Vendor only)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.VENDOR_ADMIN, UserRole.VENDOR_STAFF)
@@ -76,7 +80,8 @@ export class CatalogController {
     return this.catalogService.updateProduct(vendorId, productId, dto);
   }
 
-  @ApiBearerAuth('JWT-auth')
+
+
   @ApiOperation({ summary: 'Delete a product from catalog (Vendor only)' })
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(UserRole.VENDOR_ADMIN)
@@ -87,6 +92,35 @@ export class CatalogController {
     @Param('id') productId: string,
   ) {
     return this.catalogService.deleteProduct(vendorId, productId);
+  }
+
+  // ==========================================
+  // PRICE SHEET ENDPOINTS (Vendor Only)
+  // ==========================================
+  
+  @ApiOperation({
+    summary: 'Create a new price sheet / discount tier (Vendor Admin only)'
+  })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.VENDOR_ADMIN)
+  @Post('price-sheets')
+  async createPriceSheet(
+    @CurrentUser('vendorId') vendorId:string,
+    @Body() dto:CreatePriceSheetDto,
+  ) {
+    return this.catalogService.createPriceSheet(vendorId, dto)
+  }
+
+  @ApiOperation({
+    summary: 'Get all price sheets created by this vendor (Vendor only)'
+  })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.VENDOR_ADMIN, UserRole.BUYER_STAFF)
+  @Get('price-sheets')
+  async getMyPriceSheets(
+    @CurrentUser('vendorId') vendorId: string
+  ) {
+    return this.catalogService.getVendorPriceSheets(vendorId);
   }
 
   // ==========================================
