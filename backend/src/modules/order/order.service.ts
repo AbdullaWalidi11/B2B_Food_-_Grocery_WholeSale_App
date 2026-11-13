@@ -10,6 +10,8 @@ import { CompanyService } from '../company/company.service';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { OrderStatus, SnapshotAddress} from 'generated/prisma/enums';
+import { InjectQueue } from '@nestjs/bullmq';
+import { Queue } from 'bullmq';
 
 
 @Injectable()
@@ -17,6 +19,7 @@ export class OrderService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly companyService: CompanyService,
+    @InjectQueue('order-processing') private readonly orderQueue: Queue,
   ) {}
 
   // ==========================================
@@ -190,6 +193,24 @@ export class OrderService {
           },
         },
       });
+
+      await this.orderQueue.add(
+        'process-new-order',
+        {
+          orderId: order.id,
+          totalAmount: Number(order.totalAmount),
+          companyName: order.company.name,
+          vendorName: order.vendor.name,
+        },
+        {
+          attempts: 3,
+          backoff: {
+            type: 'exponential',
+            delay: 5000,
+          },
+          removeOnComplete: true,
+        }
+      )
 
       return order;
     });
