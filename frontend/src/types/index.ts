@@ -99,6 +99,7 @@ export interface Order {
   company?: {
     id: string;
     name: string;
+    taxNumber?: string;
     shippingAddress: string;
   };
   vendor?: {

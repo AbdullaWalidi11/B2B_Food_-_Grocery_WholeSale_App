@@ -9,6 +9,7 @@ import {
   Package,
   Users,
   ShoppingCart,
+  FileSpreadsheet,
   LogOut,
   Store,
   ChevronRight,
@@ -25,6 +26,11 @@ const NAV_ITEMS = [
     label: "Ürün Kataloğu",
     href: "/vendor/products",
     icon: Package,
+  },
+  {
+    label: 'Özel Fiyat Listeleri',
+    href: '/vendor/price-sheets',
+    icon: FileSpreadsheet,
   },
   {
     label: "Cari Hesaplar & Müşteriler",
