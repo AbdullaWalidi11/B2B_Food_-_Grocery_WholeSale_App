@@ -22,8 +22,11 @@ async function bootstrap() {
   // ==========================================
   // 2. CORS FOR FRONTEND
   // ==========================================
+   const allowedOrigins = process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
+    : ['http://localhost:3000'];
   app.enableCors({
-    origin: ['http://localhost:3000'],
+    origin: allowedOrigins,
     credentials: true,
   });
 

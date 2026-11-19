@@ -18,8 +18,10 @@ import {
   RefreshCw,
   FileSpreadsheet,
   Plus,
+  Receipt,
+  Banknote,
   CheckCircle2,
-  AlertTriangle,
+  ArrowRight,
 } from 'lucide-react';
 import { toast } from 'sonner';
 
@@ -55,7 +57,11 @@ export default function VendorCustomersPage() {
   // Modal States
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+
   const [editingCustomer, setEditingCustomer] = useState<CustomerRelationship | null>(null);
+  const [paymentCustomer, setPaymentCustomer] = useState<CustomerRelationship | null>(null);
+
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCreatingSheet, setIsCreatingSheet] = useState(false);
 
@@ -69,6 +75,10 @@ export default function VendorCustomersPage() {
   const [editCreditLimit, setEditCreditLimit] = useState<number | ''>(0);
   const [editNetTermsDays, setEditNetTermsDays] = useState(30);
   const [editPriceSheetId, setEditPriceSheetId] = useState('');
+
+  // Payment Form Fields
+  const [paymentAmount, setPaymentAmount] = useState<number | ''>('');
+  const [paymentNote, setPaymentNote] = useState('');
 
   // Fetch all required data
   const fetchData = async () => {
@@ -138,7 +148,7 @@ export default function VendorCustomersPage() {
   };
 
   // Submit Create Relationship
-  const handleCreateRelationship = async (e: React.SubmitEvent) => {
+  const handleCreateRelationship = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedBuyerId) {
       toast.error('Lütfen bir restoran / alıcı işletme seçiniz.');
@@ -166,9 +176,7 @@ export default function VendorCustomersPage() {
       setIsCreateModalOpen(false);
       fetchData();
     } catch (err: any) {
-      toast.error(
-        err.response?.data?.message || 'Cari ilişki oluşturulamadı.',
-      );
+      toast.error(err.response?.data?.message || 'Cari ilişki oluşturulamadı.');
     } finally {
       setIsSubmitting(false);
     }
@@ -184,7 +192,7 @@ export default function VendorCustomersPage() {
   };
 
   // Submit Edit Relationship
-  const handleEditRelationship = async (e: React.SubmitEvent) => {
+  const handleEditRelationship = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!editingCustomer) return;
     if (editCreditLimit === '' || Number(editCreditLimit) < 0) {
@@ -205,6 +213,43 @@ export default function VendorCustomersPage() {
       fetchData();
     } catch (err: any) {
       toast.error(err.response?.data?.message || 'Güncelleme başarısız oldu.');
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  // Open Payment Modal
+  const handleOpenPaymentModal = (rel: CustomerRelationship) => {
+    setPaymentCustomer(rel);
+    setPaymentAmount(rel.currentBalance > 0 ? rel.currentBalance : '');
+    setPaymentNote('Garanti Bankası Havale / EFT');
+    setIsPaymentModalOpen(true);
+  };
+
+  // Submit Payment / Tahsilat
+  const handleRecordPayment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!paymentCustomer) return;
+
+    if (paymentAmount === '' || Number(paymentAmount) <= 0) {
+      toast.error('Lütfen geçerli bir tahsilat tutarı giriniz.');
+      return;
+    }
+
+    setIsSubmitting(true);
+    try {
+      await api.post(`/company/relationship/${paymentCustomer.id}/payment`, {
+        amount: Number(paymentAmount),
+        note: paymentNote,
+      });
+
+      toast.success(
+        `${formatCurrency(Number(paymentAmount))} tahsilat başarıyla işlendi ve cari borç düşüldü!`,
+      );
+      setIsPaymentModalOpen(false);
+      fetchData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Tahsilat işlenemedi.');
     } finally {
       setIsSubmitting(false);
     }
@@ -235,7 +280,7 @@ export default function VendorCustomersPage() {
             Cari Hesaplar & Müşteri Portföyü
           </h1>
           <p className="text-sm text-slate-500 mt-0.5">
-            Restoran müşterilerinizin kredi limitlerini, açık vadeli borçlarını ve iskonto listelerini yönetin.
+            Restoran müşterilerinizin kredi limitlerini, açık vadeli borçlarını ve tahsilatlarını yönetin.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -333,7 +378,7 @@ export default function VendorCustomersPage() {
               {searchQuery ? 'Aramanıza uygun müşteri bulunamadı' : 'Henüz cari hesap tanımlanmamış'}
             </p>
             <p className="text-xs text-slate-400 mt-1 max-w-md mx-auto">
-              Platforma kayıtlı restoranlara kredi limiti ve vadeli ödeme tanımlayarak sipariş vermelerini sağlayın.
+              Platforma kayıtlı restoranlara kredi limiti tanımlayarak sipariş vermelerini sağlayın.
             </p>
             {!searchQuery && (
               <button
@@ -433,16 +478,27 @@ export default function VendorCustomersPage() {
                         </span>
                       </td>
 
-                      {/* Actions */}
+                      {/* Actions: Tahsilat Gir + Düzenle */}
                       <td className="py-4 px-6 text-right">
-                        <button
-                          onClick={() => handleOpenEditModal(c)}
-                          title="Cari Limiti Düzenle"
-                          className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all cursor-pointer border border-slate-200 hover:border-emerald-200"
-                        >
-                          <Edit2 className="w-3.5 h-3.5" />
-                          Düzenle
-                        </button>
+                        <div className="inline-flex items-center gap-1.5 justify-end">
+                          <button
+                            onClick={() => handleOpenPaymentModal(c)}
+                            title="Tahsilat / Ödeme Girişi"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 hover:bg-emerald-100 border border-emerald-200 rounded-lg transition-all cursor-pointer"
+                          >
+                            <Banknote className="w-3.5 h-3.5" />
+                            Tahsilat Gir
+                          </button>
+
+                          <button
+                            onClick={() => handleOpenEditModal(c)}
+                            title="Cari Limiti Düzenle"
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium text-slate-600 hover:text-slate-900 hover:bg-slate-100 rounded-lg transition-all cursor-pointer border border-slate-200"
+                          >
+                            <Edit2 className="w-3.5 h-3.5" />
+                            Düzenle
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   );
@@ -452,6 +508,123 @@ export default function VendorCustomersPage() {
           </div>
         )}
       </div>
+
+      {/* TAHSİLAT & ÖDEME GİRİŞİ MODAL */}
+      {isPaymentModalOpen && paymentCustomer && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/40 backdrop-blur-xs">
+          <div className="bg-white border border-slate-200 rounded-2xl shadow-xl w-full max-w-md overflow-hidden animate-in fade-in zoom-in-95 duration-150">
+            <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
+              <div>
+                <h3 className="text-base font-bold text-slate-900">Tahsilat / Ödeme Kaydı</h3>
+                <p className="text-xs text-slate-400 mt-0.5">{paymentCustomer.company.name}</p>
+              </div>
+              <button
+                onClick={() => setIsPaymentModalOpen(false)}
+                className="p-1.5 text-slate-400 hover:text-slate-600 rounded-lg transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            <form onSubmit={handleRecordPayment} className="p-6 space-y-4">
+              {/* Current Debt Card */}
+              <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 flex items-center justify-between text-xs">
+                <div>
+                  <span className="text-amber-800 font-semibold block">Mevcut Açık Borç:</span>
+                  <span className="text-[10px] text-amber-700">Tahsilat bekleyen cari bakiye</span>
+                </div>
+                <span className="text-base font-bold text-amber-950">
+                  {formatCurrency(paymentCustomer.currentBalance)}
+                </span>
+              </div>
+
+              {/* Amount Input */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="text-xs font-semibold text-slate-700">
+                    Tahsil Edilen Tutar (₺) *
+                  </label>
+                  {paymentCustomer.currentBalance > 0 && (
+                    <button
+                      type="button"
+                      onClick={() => setPaymentAmount(paymentCustomer.currentBalance)}
+                      className="text-[11px] font-semibold text-emerald-600 hover:text-emerald-700 cursor-pointer"
+                    >
+                      Tümünü Kapat ({formatCurrency(paymentCustomer.currentBalance)})
+                    </button>
+                  )}
+                </div>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  required
+                  placeholder="15000.00"
+                  value={paymentAmount}
+                  onChange={(e) =>
+                    setPaymentAmount(e.target.value === '' ? '' : parseFloat(e.target.value))
+                  }
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-bold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Note / Reference */}
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 mb-1">
+                  Açıklama / Dekont No (İsteğe Bağlı)
+                </label>
+                <input
+                  type="text"
+                  placeholder="Örn: Garanti Bankası EFT Dekont #98432"
+                  value={paymentNote}
+                  onChange={(e) => setPaymentNote(e.target.value)}
+                  className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-xs focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
+                />
+              </div>
+
+              {/* Projected Balance */}
+              {paymentAmount !== '' && Number(paymentAmount) > 0 && (
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl text-xs space-y-1">
+                  <div className="flex justify-between text-slate-500">
+                    <span>Tahsilat Sonrası Kalan Borç:</span>
+                    <span className="font-bold text-slate-900">
+                      {formatCurrency(Math.max(0, paymentCustomer.currentBalance - Number(paymentAmount)))}
+                    </span>
+                  </div>
+                  <div className="flex justify-between text-slate-500">
+                    <span>Yeni Kullanılabilir Limit:</span>
+                    <span className="font-bold text-emerald-600">
+                      {formatCurrency(paymentCustomer.creditLimit - Math.max(0, paymentCustomer.currentBalance - Number(paymentAmount)))}
+                    </span>
+                  </div>
+                </div>
+              )}
+
+              {/* Action Buttons */}
+              <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setIsPaymentModalOpen(false)}
+                  className="px-4 py-2 text-xs font-semibold text-slate-600 hover:bg-slate-100 rounded-xl transition-colors cursor-pointer"
+                >
+                  İptal
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || paymentAmount === ''}
+                  className="inline-flex items-center gap-2 px-5 py-2 text-xs font-semibold text-white bg-emerald-600 hover:bg-emerald-700 rounded-xl transition-all shadow-md shadow-emerald-600/20 cursor-pointer disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                  ) : (
+                    'Tahsilatı Onayla'
+                  )}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* CREATE RELATIONSHIP MODAL */}
       {isCreateModalOpen && (
@@ -473,7 +646,6 @@ export default function VendorCustomersPage() {
             </div>
 
             <form onSubmit={handleCreateRelationship} className="p-6 space-y-4">
-              {/* Buyer Selector */}
               <div>
                 <label className="block text-xs font-semibold text-slate-700 mb-1">
                   Restoran / Alıcı İşletme *
@@ -498,7 +670,6 @@ export default function VendorCustomersPage() {
                 )}
               </div>
 
-              {/* Price Sheet Selector */}
               <div>
                 <div className="flex items-center justify-between mb-1">
                   <label className="text-xs font-semibold text-slate-700">Fiyat Listesi *</label>
@@ -543,7 +714,6 @@ export default function VendorCustomersPage() {
                 )}
               </div>
 
-              {/* Credit Limit & Net Terms */}
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="block text-xs font-semibold text-slate-700 mb-1">
@@ -561,9 +731,6 @@ export default function VendorCustomersPage() {
                     }
                     className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                   />
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">
-                    Bu tutara kadar borçlanabilir
-                  </span>
                 </div>
 
                 <div>
@@ -581,13 +748,9 @@ export default function VendorCustomersPage() {
                       </option>
                     ))}
                   </select>
-                  <span className="text-[10px] text-slate-400 mt-0.5 block">
-                    Fatura kesiminden sonraki gün
-                  </span>
                 </div>
               </div>
 
-              {/* Modal Buttons */}
               <div className="pt-4 border-t border-slate-100 flex items-center justify-end gap-3">
                 <button
                   type="button"
@@ -646,9 +809,6 @@ export default function VendorCustomersPage() {
                   }
                   className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-500"
                 />
-                <span className="text-[10px] text-slate-400 mt-0.5 block">
-                  Mevcut açık borç: {formatCurrency(editingCustomer.currentBalance)}
-                </span>
               </div>
 
               <div>

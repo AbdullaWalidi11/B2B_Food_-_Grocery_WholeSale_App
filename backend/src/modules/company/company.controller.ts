@@ -8,6 +8,7 @@ import { RolesGuard } from "src/common/guards/roles.guard";
 import { Roles } from "src/common/decorators/roles.decorator";
 import { CurrentUser } from "src/common/decorators/current-user.decorator";
 import { UserRole } from "generated/prisma/enums";
+import { RecordPaymentDto } from "./dto/record-payment.dto";
 import { get } from "http";
 
 
@@ -60,6 +61,20 @@ export class CompanyController {
     @Body() dto: UpdateRelationshipDto,
   ) {
     return this.companyService.updateRelationship(vendorId, relationshipId, dto);
+  }
+
+
+    @ApiOperation({
+    summary: 'Record a debt settlement / payment receipt from a restaurant (Vendor Admin only)',
+  })
+  @Roles(UserRole.VENDOR_ADMIN, UserRole.VENDOR_STAFF)
+  @Post('relationship/:id/payment')
+  async recordPayment(
+    @CurrentUser('vendorId') vendorId: string,
+    @Param('id') relationshipId: string,
+    @Body() dto: RecordPaymentDto,
+  ) {
+    return this.companyService.recordPayment(vendorId, relationshipId, dto);
   }
 
   @ApiOperation({

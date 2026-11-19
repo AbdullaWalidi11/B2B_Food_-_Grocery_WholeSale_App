@@ -159,4 +159,18 @@ export class CatalogController {
   async getVendorCatalog(@Param('vendorId') vendorId: string) {
     return this.catalogService.getProductsByVendorId(vendorId);
   }
+
+
+    @ApiOperation({
+    summary: 'Browse vendor catalog with dynamic contract pricing (Buyer only)',
+  })
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(UserRole.BUYER_ADMIN, UserRole.BUYER_STAFF)
+  @Get('buyer/vendor/:vendorId/products')
+  async getProductsForBuyer(
+    @Param('vendorId') vendorId: string,
+    @CurrentUser('companyId') companyId: string,
+  ) {
+    return this.catalogService.getProductsForBuyer(vendorId, companyId);
+  }
 }

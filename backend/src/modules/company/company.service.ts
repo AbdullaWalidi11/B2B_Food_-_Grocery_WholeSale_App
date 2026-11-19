@@ -2,7 +2,7 @@ import { Injectable, NotFoundException, ConflictException, BadRequestException }
 import { PrismaService } from "src/prisma/prisma.service";
 import { CreateRelationshipDto } from "./dto/create-relationship.dto";
 import { UpdateRelationshipDto } from "./dto/update-relationship.dto";
-import { identity } from "rxjs";
+import { RecordPaymentDto } from "./dto/record-payment.dto";
 
 @Injectable()
 export class CompanyService {
@@ -217,6 +217,64 @@ export class CompanyService {
       };
     });
  }
+
+
+   /**
+   * Record a payment / debt settlement from a restaurant customer (Vendor Admin only)
+   * Decrements currentBalance and replenishes available credit line.
+   */
+  async recordPayment(
+    vendorId: string,
+    relationshipId: string,
+    dto: RecordPaymentDto,
+  ) {
+    const relationship = await this.prisma.vendorCustomerRelationship.findUnique({
+      where: { id: relationshipId },
+      include: { company: true },
+    });
+
+    if (!relationship || relationship.vendorId !== vendorId) {
+      throw new NotFoundException('Customer relationship not found');
+    }
+
+    if (dto.amount <= 0) {
+      throw new BadRequestException('Tahsilat tutarı sıfırdan büyük olmalıdır');
+    }
+
+    const currentBalance = Number(relationship.currentBalance);
+    // Debt balance cannot drop below zero
+    const newBalance = Math.max(0, currentBalance - dto.amount);
+
+    const updated = await this.prisma.vendorCustomerRelationship.update({
+      where: { id: relationshipId },
+      data: {
+        currentBalance: newBalance,
+      },
+      include: {
+        company: true,
+        priceSheet: {
+          select: { id: true, name: true },
+        },
+      },
+    });
+
+    const creditLimit = Number(updated.creditLimit);
+    const updatedBalance = Number(updated.currentBalance);
+
+    return {
+      message: 'Tahsilat başarıyla işlendi ve cari bakiye güncellendi.',
+      relationship: {
+        id: updated.id,
+        company: updated.company,
+        priceSheet: updated.priceSheet,
+        creditLimit,
+        currentBalance: updatedBalance,
+        availableCredit: creditLimit - updatedBalance,
+        netTermsDays: updated.netTermsDays,
+        updatedAt: updated.updatedAt,
+      },
+    };
+  }
 
 
 async validateCreditAvailability(

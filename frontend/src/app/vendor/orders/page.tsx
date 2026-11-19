@@ -288,7 +288,7 @@ export default function VendorOrdersPage() {
                         </div>
                         <div className="text-[11px] text-slate-400 flex items-center gap-1 mt-0.5">
                           <MapPin className="w-3 h-3 text-slate-400" />
-                          <span className="truncate max-w-[200px]">
+                          <span className="truncate max-w-50">
                             {order.company?.shippingAddress || 'Adres belirtilmemiş'}
                           </span>
                         </div>
@@ -304,7 +304,7 @@ export default function VendorOrdersPage() {
                         <span className="font-semibold text-slate-800">
                           {order.items?.length || 0} Kalem Ürün
                         </span>
-                        <div className="text-[11px] text-slate-400 truncate max-w-[180px] mt-0.5">
+                        <div className="text-[11px] text-slate-400 truncate max-w-45 mt-0.5">
                           {order.items?.map((i) => i.product?.name).join(', ')}
                         </div>
                       </td>
