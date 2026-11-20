@@ -5,6 +5,9 @@ FROM node:22-alpine AS builder
 
 WORKDIR /app
 
+# Install native build tools for bcrypt
+RUN apk add --no-cache python3 make g++
+
 # Enable pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
@@ -13,7 +16,7 @@ COPY package.json pnpm-lock.yaml ./
 COPY prisma ./prisma/
 COPY prisma*.config.ts ./
 
-# Install all dependencies (including devDependencies for build)
+# Install dependencies (approved packages can now compile)
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
