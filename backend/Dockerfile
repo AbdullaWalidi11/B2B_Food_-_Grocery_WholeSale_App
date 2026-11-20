@@ -11,12 +11,12 @@ RUN apk add --no-cache python3 make g++
 # Enable pnpm
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy dependency manifests
-COPY package.json pnpm-lock.yaml ./
+# Copy dependency manifests AND pnpm-workspace.yaml for build approvals
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 COPY prisma ./prisma/
 COPY prisma*.config.ts ./
 
-# Install dependencies (approved packages can now compile)
+# Install dependencies (allowBuilds is now loaded properly)
 RUN pnpm install --frozen-lockfile
 
 # Copy source code
@@ -37,8 +37,8 @@ ENV NODE_ENV=production
 
 RUN corepack enable && corepack prepare pnpm@latest --activate
 
-# Copy dependency manifests and install production-only dependencies
-COPY package.json pnpm-lock.yaml ./
+# Copy dependency manifests AND pnpm-workspace.yaml for production
+COPY package.json pnpm-lock.yaml pnpm-workspace.yaml* ./
 RUN pnpm install --prod --frozen-lockfile
 
 # Copy compiled artifacts from builder
