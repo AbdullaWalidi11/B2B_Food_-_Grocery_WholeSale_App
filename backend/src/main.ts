@@ -22,12 +22,28 @@ async function bootstrap() {
   // ==========================================
   // 2. CORS FOR FRONTEND
   // ==========================================
-   const allowedOrigins = process.env.FRONTEND_URL
+     const configuredOrigins = process.env.FRONTEND_URL
     ? process.env.FRONTEND_URL.split(',').map((url) => url.trim())
-    : ['http://localhost:3000'];
+    : [];
+
   app.enableCors({
-    origin: allowedOrigins,
+    origin: (origin: any, callback: any) => {
+      // Allow requests with no origin (Postman, mobile, curl)
+      if (!origin) return callback(null, true);
+
+      // Automatically allow all Vercel domains, localhost, and configured URLs
+      if (
+        origin.includes('localhost') ||
+        origin.endsWith('.vercel.app') ||
+        configuredOrigins.includes(origin)
+      ) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
     credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept'],
   });
 
   // ==========================================
