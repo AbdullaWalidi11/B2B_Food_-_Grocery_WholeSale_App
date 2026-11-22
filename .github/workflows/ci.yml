@@ -1,0 +1,44 @@
+name: CI Checks
+
+# 1. WHEN to run:
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# 2. WHAT to do:
+jobs:
+  verify-code:
+    # WHERE to run (a free cloud Linux machine provided by GitHub)
+    runs-on: ubuntu-latest
+
+    steps:
+      # Step A: Download your repository code
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      # Step B: Install Node.js & pnpm
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10
+
+      # Step C: Test the Backend
+      - name: Install & Test Backend
+        run: |
+          cd backend
+          pnpm install
+          pnpm run build
+
+      # Step D: Test the Frontend
+      - name: Install & Test Frontend
+        run: |
+          cd frontend
+          pnpm install
+          pnpm run build
