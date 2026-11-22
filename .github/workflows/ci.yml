@@ -1,24 +1,19 @@
 name: CI Checks
 
-# 1. WHEN to run:
 on:
   push:
-    branches: [main]
+    branches: [ main ]
   pull_request:
-    branches: [main]
+    branches: [ main ]
 
-# 2. WHAT to do:
 jobs:
   verify-code:
-    # WHERE to run (a free cloud Linux machine provided by GitHub)
     runs-on: ubuntu-latest
 
     steps:
-      # Step A: Download your repository code
       - name: Checkout Code
         uses: actions/checkout@v4
 
-      # Step B: Install Node.js & pnpm
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
@@ -29,15 +24,16 @@ jobs:
         with:
           version: 10
 
-      # Step C: Test the Backend
-      - name: Install & Test Backend
+      - name: Verify Backend Build
         run: |
           cd backend
           pnpm install
+          npx prisma generate
           pnpm run build
 
-      # Step D: Test the Frontend
-      - name: Install & Test Frontend
+      - name: Verify Frontend Build
+        env:
+          NEXT_PUBLIC_API_URL: "https://b2bfood-grocerywholesaleapp-production.up.railway.app"
         run: |
           cd frontend
           pnpm install
