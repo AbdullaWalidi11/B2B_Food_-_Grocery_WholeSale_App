@@ -134,10 +134,10 @@ export class OrderService {
       totalAmount,
     );
 
-    // ----------------------------------------------------
+        // ----------------------------------------------------
     // GATE 4: Atomic Database Commit ($transaction)
     // ----------------------------------------------------
-    return this.prisma.$transaction(async (tx) => {
+    const order = await this.prisma.$transaction(async (tx) => {
       // 1. Decrement product inventory stock
       for (const item of items) {
         await tx.product.update({
@@ -166,7 +166,7 @@ export class OrderService {
       });
 
       // 3. Create the permanent Order & OrderItems records
-      const order = await tx.order.create({
+      return tx.order.create({
         data: {
           companyId: buyerCompanyId,
           vendorId,
@@ -193,7 +193,12 @@ export class OrderService {
           },
         },
       });
+    });
 
+    // ----------------------------------------------------
+    // Non-blocking async queue dispatch
+    // ----------------------------------------------------
+    try {
       await this.orderQueue.add(
         'process-new-order',
         {
@@ -209,11 +214,13 @@ export class OrderService {
             delay: 5000,
           },
           removeOnComplete: true,
-        }
-      )
+        },
+      );
+    } catch (queueErr) {
+      console.warn('BullMQ order queue warning:', queueErr);
+    }
 
-      return order;
-    });
+    return order;
   }
 
   // ==========================================

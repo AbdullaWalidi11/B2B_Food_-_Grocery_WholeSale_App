@@ -21,7 +21,8 @@ import { OrderModule } from './modules/order/order.module';
     BullModule.forRoot({
       connection: {
         host: process.env.REDIS_HOST || 'localhost',
-        port: Number(process.env.REDIS_PORT) || 6379
+        port: Number(process.env.REDIS_PORT) || 6379,
+         password: process.env.REDIS_PASSWORD || undefined,
       }
     }),
     PrismaModule,
