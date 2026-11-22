@@ -10,7 +10,7 @@
 [![Tailwind CSS](https://img.shields.io/badge/Tailwind_CSS-v4-06B6D4?style=for-the-badge&logo=tailwindcss&logoColor=white)](https://tailwindcss.com/)
 [![Railway](https://img.shields.io/badge/Railway-Production-0B0D0E?style=for-the-badge&logo=railway&logoColor=white)](https://railway.app/)
 [![Vercel](https://img.shields.io/badge/Vercel-Production-000000?style=for-the-badge&logo=vercel&logoColor=white)](https://vercel.com/)
-[![CI Checks](https://github.com/AbdullaWalidi11/B2B_Food_Wholesale_Platform/actions/workflows/ci.yml/badge.svg)]
+[![CI Checks](https://github.com/AbdullaWalidi11/B2B_Food_-_Grocery_WholeSale_App/actions/workflows/ci.yml/badge.svg)](https://github.com/AbdullaWalidi11/B2B_Food_-_Grocery_WholeSale_App/actions/workflows/ci.yml)
 ---
 
 ## 📌 Executive Summary
